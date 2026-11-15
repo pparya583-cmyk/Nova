@@ -211,3 +211,32 @@ body:not(.has) #mini{display:none}
 .dim .eqs{opacity:.5}
 .ov canvas.viz{height:52px}
 .pa .art{font-size:64px}
+
+/* ===== animasi halus ===== */
+@keyframes zin{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:none}}
+@keyframes zout{from{opacity:0;transform:scale(1.1)}to{opacity:1;transform:none}}
+@keyframes ftab{from{opacity:0;transform:scale(.97) translateY(10px)}to{opacity:1;transform:none}}
+#view.pg-fwd{animation:zin .42s cubic-bezier(.2,.9,.25,1)}
+#view.pg-bck{animation:zout .42s cubic-bezier(.2,.9,.25,1)}
+#view.pg-tab{animation:ftab .38s cubic-bezier(.2,.9,.25,1)}
+@keyframes ovin{from{opacity:0;transform:translateY(60px) scale(.88)}to{opacity:1;transform:none}}
+@keyframes ovout{to{opacity:0;transform:translateY(50px) scale(.88)}}
+.ov{animation:ovin .45s cubic-bezier(.2,.9,.25,1);transform-origin:50% 92%}
+.ov.closing{animation:ovout .24s cubic-bezier(.5,0,.9,.4) forwards;pointer-events:none}
+#sheet .panel{transition:transform .42s cubic-bezier(.2,.9,.25,1)}
+#sheet .scrim{transition:opacity .3s}
+#view{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.rv{opacity:0;translate:0 var(--dy,30px);scale:.94}
+.rv.in{opacity:1;translate:0 0;scale:1;transition:opacity .55s ease,translate .7s cubic-bezier(.2,.9,.25,1),scale .7s cubic-bezier(.2,.9,.25,1);transition-delay:var(--d,0ms)}
+.ib,.pl,.chip,.cat,.cv,.gr,.tr,.tile,.fgt,.cb,.main,.pbig,.btn,.li,.th-c,.mn,.tabs button,.hero,.pr,.avi,.micb,.tools button,.lyb,.sug button,.moods button,.prof,.fs button,#mini,.more{transition:transform .22s cubic-bezier(.2,.9,.25,1),background .25s,box-shadow .25s,filter .25s,color .25s}
+.ib:active,.pl:active,.chip:active,.cat:active,.cv:active,.gr:active,.tile:active,.fgt:active,.cb:active,.pbig:active,.btn:active,.th-c:active,.tabs button:active,.pr:active,.avi:active,.micb:active,.tools button:active,.lyb:active,.sug button:active,.moods button:active,.prof:active,.fs button:active,.more:active{transform:scale(.93)}
+.main:active{transform:scale(.9)}.tr:active,.li:active,.mn:active,.hero:active{transform:scale(.975)}#mini:active{transform:scale(.97)}
+.th-c{transition:transform .22s cubic-bezier(.2,.9,.25,1),border-color .25s,box-shadow .25s}
+/* gelembung navigasi liquid glass */
+#nav{touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+#nav .nb{position:absolute;left:0;top:6px;height:54px;border-radius:28px;pointer-events:none;will-change:transform;background:radial-gradient(120% 140% at 30% 0,rgba(255,255,255,.42),rgba(255,255,255,.1) 55%,rgba(47,140,255,.22));border:1px solid rgba(255,255,255,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -8px 16px rgba(47,140,255,.35),0 10px 26px -8px var(--acc)}
+#nav button{position:relative;z-index:1;touch-action:none}
+#nav button.on{background:none}
+#nav button .ic{transition:transform .3s cubic-bezier(.2,.9,.25,1),color .25s}
+#nav button.on .ic{transform:translateY(-1px) scale(1.12)}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}.rv{opacity:1;translate:none;scale:none}}
