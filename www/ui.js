@@ -76,12 +76,16 @@ applyTheme(P.theme);
 /* ----- navigasi ----- */
 const R = { tab: 'home', stack: [] }, OVS = [];
 let skip = 0, after = null;
+let prevDepth = 0, prevTab = 'home', navSync = () => { };
 function render() {
   applyTheme(P.theme);
   const top = R.stack[R.stack.length - 1], [n, a] = top || [R.tab], el = $('#view');
+  const d = R.stack.length, dir = d > prevDepth ? 'fwd' : d < prevDepth ? 'bck' : R.tab !== prevTab ? 'tab' : ''; prevDepth = d; prevTab = R.tab;
+  el.classList.remove('pg-fwd', 'pg-bck', 'pg-tab'); if (dir) { void el.offsetWidth; el.classList.add('pg-' + dir) }
+  revReset();
   $('#app').classList.toggle('sub', !!top);
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.t === R.tab));
-  el.scrollTop = 0; el.innerHTML = ''; V[n](el, a);
+  el.scrollTop = 0; el.innerHTML = ''; V[n](el, a); navSync();
 }
 function go(n, a) { R.stack.push([n, a]); history.pushState({ n }, ''); render() }
 function rewind(k, cb) {
@@ -89,13 +93,14 @@ function rewind(k, cb) {
   skip = 1; after = cb; history.go(-k);
   setTimeout(() => { if (skip) { skip = 0; const f = after; after = null; f && f() } }, 450);
 }
-function closeOvs(cb) { const k = OVS.length; OVS.splice(0).forEach(id => $('#' + id).classList.add('hide')); rewind(k, cb) }
-function unwind(cb) { const k = OVS.length + R.stack.length; OVS.splice(0).forEach(id => $('#' + id).classList.add('hide')); R.stack = []; rewind(k, cb) }
+function hideOv(id) { const e = $('#' + id); e.classList.add('closing'); clearTimeout(e._t); e._t = setTimeout(() => { e.classList.remove('closing'); e.classList.add('hide') }, 240) }
+function closeOvs(cb) { const k = OVS.length; OVS.splice(0).forEach(hideOv); rewind(k, cb) }
+function unwind(cb) { const k = OVS.length + R.stack.length; OVS.splice(0).forEach(hideOv); R.stack = []; rewind(k, cb) }
 function tab(n) { R.tab = n; unwind(render) }
-function openOv(id) { if (OVS.includes(id)) return; $('#' + id).classList.remove('hide'); OVS.push(id); history.pushState({ o: id }, '') }
+function openOv(id) { if (OVS.includes(id)) return; const e = $('#' + id); clearTimeout(e._t); e.classList.remove('closing', 'hide'); OVS.push(id); history.pushState({ o: id }, '') }
 addEventListener('popstate', () => {
   if (skip) { skip = 0; const f = after; after = null; f && f(); return }
-  if (OVS.length) { $('#' + OVS.pop()).classList.add('hide'); return }
+  if (OVS.length) { hideOv(OVS.pop()); return }
   if (R.stack.length) { R.stack.pop(); render() }
 });
 const back = () => history.back();
@@ -355,7 +360,7 @@ const V = {
     <div class="li"><div class="gi">${ic('bell')}</div><div class="mi"><b>Notifikasi</b><span>${P.notif ? 'Aktif' : 'Nonaktif'}</span></div>${sw('notif', P.notif)}</div>
     <div class="li"><div class="gi">${ic('mono')}</div><div class="mi"><b>Data Saver</b><span>${P.ds ? 'Hemat kuota aktif' : 'Nonaktif'}</span></div>${sw('ds', P.ds)}</div></div>
     <div class="box glass">${li('', 'AI Music Assistant', 'Cari lagu lewat obrolan atau suara', 'ai', 'star')}${li('', 'Sosial & Komunitas', 'Bagikan, ikuti artis, playlist bersama', 'so', 'users')}${li('', 'Fitur Unggulan Lainnya', 'Mood, Replay Stats, Car Mode, dll.', 'fi', 'layers')}${li('', 'Replay Stats', 'Statistik mendengarmu', 'st', 'bars')}${li('', 'Hidden Playlist', 'Playlist rahasia berkunci PIN', 'hp', 'lock')}</div>
-    <div class="box glass">${li('', 'Sumber Musik', SRC[P.src].n + ' · untuk pencarian', 'sr', 'music')}${li('', 'Lagu dari HP', 'Putar file MP3/FLAC milikmu', 'lf', 'folder')}${li('', 'Cadangan & Pulihkan', 'Favorit, playlist, artis diikuti', 'bk2', 'share')}${li('', 'Tentang NovaMusic', 'Versi 2.0', 'ab', 'info')}</div>`;
+    <div class="box glass">${li('', 'Sumber Musik', SRC[P.src].n + ' · untuk pencarian', 'sr', 'music')}${li('', 'Lagu dari HP', 'Putar file MP3/FLAC milikmu', 'lf', 'folder')}${li('', 'Cadangan & Pulihkan', 'Favorit, playlist, artis diikuti', 'bk2', 'share')}${li('', 'Tentang NovaMusic', 'Versi 2.1', 'ab', 'info')}</div>`;
     $('#bk').onclick = () => tab('home'); $('#hs').onclick = () => tab('search');
     $('#pf').onclick = () => ask('Nama profil', 'Namamu', v => { P.name = v.slice(0, 24); save(); render() }, P.name);
     const A2_ = {
@@ -526,7 +531,7 @@ async function aiAsk(text) {
 /* ===== INISIALISASI ===== */
 function build() {
   $('#nav').innerHTML = [['home', 'Home', 'home'], ['search', 'Search', 'search'], ['lib', 'Library', 'music'], ['set', 'Profile', 'user']].map(t => `<button data-t="${t[0]}">${ic(t[2])}<span>${t[1]}</span></button>`).join('');
-  $$('#nav button').forEach(b => b.onclick = () => tab(b.dataset.t));
+  navInit();
   $('#mini').innerHTML = `<div class="cov nArt"></div><div class="mi"><b class="nT"></b><span class="nA"></span></div><button class="mb bplay" aria-label="Putar">${ic('play', 'f')}</button><button class="mb bnext" aria-label="Berikutnya">${ic('next', 'f')}</button><div id="mbar"><i></i></div>`;
   $('#mini').onclick = e => { if (!e.target.closest('button')) openOv('full') };
   $('#full').innerHTML = `<div class="pbg"></div>
@@ -546,6 +551,49 @@ function build() {
   $('#fc').onclick = back; $('#lyc').onclick = back; $('#cc').onclick = () => { try { wakeL.l && wakeL.l.release() } catch (e) { } back() };
   $('#lyo').onclick = () => { openOv('lyr'); loadLyrics() };
 }
+/* ----- gelembung navigasi yang bisa digeser ----- */
+function navInit() {
+  const nav = $('#nav'), bs = $$('#nav button'), TABS = ['home', 'search', 'lib', 'set'], bub = document.createElement('div'); bub.className = 'nb'; nav.prepend(bub);
+  const st = { x: 6, v: 0, t: 6, w: 0, drag: false, raf: 0, rx: 0 };
+  const geom = () => { st.w = (nav.clientWidth - 12) / 4; bub.style.width = st.w + 'px' }, posOf = i => 6 + i * st.w, idxAt = x => clamp(Math.round((x - 6) / st.w), 0, 3);
+  function paint() {
+    const sx = 1 + clamp(Math.abs(st.v) / 38, 0, .38) + (st.drag ? .1 : 0), sy = 1 + (st.drag ? .06 : 0) - clamp(Math.abs(st.v) / 120, 0, .12);
+    bub.style.transform = `translateX(${st.x}px) scale(${sx},${sy})`; const n = idxAt(st.x); bs.forEach((b, i) => b.classList.toggle('on', i === n));
+  }
+  function loop() {
+    cancelAnimationFrame(st.raf);
+    const f = () => {
+      if (st.drag) { const nx = st.x + (st.t - st.x) * .38; st.v = nx - st.x; st.x = nx } else { st.v += (st.t - st.x) * .2; st.v *= .7; st.x += st.v }
+      paint();
+      if (!st.drag && Math.abs(st.v) < .05 && Math.abs(st.t - st.x) < .3) { st.x = st.t; st.v = 0; paint(); return }
+      st.raf = requestAnimationFrame(f);
+    }; st.raf = requestAnimationFrame(f);
+  }
+  navSync = () => { if (st.drag || !nav.clientWidth) return; geom(); st.t = posOf(Math.max(0, TABS.indexOf(R.tab))); if (!st.moved0) { st.x = st.t; st.moved0 = 1; paint() } else loop() };
+  const setT = cx => { st.t = clamp(cx - st.rx - st.w / 2, 6, 6 + 3 * st.w) };
+  nav.onpointerdown = e => { geom(); try { nav.setPointerCapture(e.pointerId) } catch (_) { } st.drag = true; st.rx = nav.getBoundingClientRect().left; setT(e.clientX); loop() };
+  nav.onpointermove = e => { if (st.drag) setT(e.clientX) };
+  nav.onpointerup = () => { if (!st.drag) return; st.drag = false; const n = idxAt(st.t); st.t = posOf(n); loop(); if (TABS[n] !== R.tab || R.stack.length) tab(TABS[n]) };
+  nav.onpointercancel = () => { st.drag = false; navSync() };
+  bs.forEach((b, i) => b.onclick = e => { if (e.detail === 0) tab(TABS[i]) });
+  addEventListener('resize', () => { geom(); st.x = st.t = posOf(Math.max(0, TABS.indexOf(R.tab))); paint() });
+}
+
+/* ----- animasi muncul saat scroll (naik & turun) ----- */
+const REV = '.tr,.gr,.cv,.cat,.fgt,.tile,.box,.prof,.pr,.sh,.hero,.stat>div,.th-c,.moods button,.chips .chip,.eqbox,.avi,.fs,.ph,.bub,.top';
+let sdir = 1, sl = 0;
+const io = new IntersectionObserver(es => {
+  let i = 0; es.forEach(e => {
+    const t = e.target;
+    if (e.isIntersecting) { if (!t.classList.contains('in')) { t.style.setProperty('--dy', (sdir > 0 ? 34 : -34) + 'px'); t.style.setProperty('--d', Math.min(i++, 8) * 45 + 'ms'); t.classList.add('in') } }
+    else t.classList.remove('in');
+  });
+}, { root: $('#view'), rootMargin: '0px 0px -3% 0px', threshold: .04 });
+function revReset() { io.disconnect(); sdir = 1; sl = 0 }
+const revWatch = n => { if (n.nodeType !== 1) return; if (n.matches(REV)) { n.classList.add('rv'); io.observe(n) } n.querySelectorAll(REV).forEach(x => { x.classList.add('rv'); io.observe(x) }) };
+new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(revWatch))).observe($('#view'), { childList: true, subtree: true });
+$('#view').addEventListener('scroll', () => { const y = $('#view').scrollTop; if (Math.abs(y - sl) > 2) { sdir = y > sl ? 1 : -1; sl = y } }, { passive: true });
+
 const SWF = {
   eq: v => { setEq(v); const b = $('#eqb'); if (b) b.classList.toggle('dim', !v) },
   bass: v => { P.bass = v; fxApply(); if (!P.eq) toast('Aktifkan Equalizer agar efek terdengar') },
