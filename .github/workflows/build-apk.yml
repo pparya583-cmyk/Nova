@@ -1,0 +1,65 @@
+name: Build APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+env:
+  KS: ${{ secrets.KEYSTORE_BASE64 }}
+  KS_PASS: ${{ secrets.KEYSTORE_PASSWORD }}
+  KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+  KS_ALIAS: ${{ secrets.KEY_ALIAS }}
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 17 }
+      - run: npm install
+      - run: npx cap add android
+      - name: Pasang kode native (putar di latar belakang)
+        run: |
+          cp native/*.java android/app/src/main/java/com/musikglass/app/
+          M=android/app/src/main/AndroidManifest.xml
+          sed -i 's|<application|<uses-permission android:name="android.permission.FOREGROUND_SERVICE"/><uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><uses-permission android:name="android.permission.WAKE_LOCK"/><application|' $M
+          sed -i 's|</application>|<service android:name=".MusicService" android:exported="false" android:foregroundServiceType="mediaPlayback"/></application>|' $M
+      - name: Ikon dan splash screen
+        continue-on-error: true
+        run: npx capacitor-assets generate --android
+      - run: npx cap sync android
+      - name: Cek akses Maven dan pasang mirror cadangan
+        run: |
+          curl -sI https://repo.maven.apache.org/maven2/org/ow2/asm/asm-util/9.2/asm-util-9.2.pom | head -1 || true
+          curl -sI https://dl.google.com/dl/android/maven2/com/android/tools/build/gradle/8.2.1/gradle-8.2.1.pom | head -1 || true
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/mirror.gradle <<'EOG'
+          def mirror = 'https://maven-central.storage-download.googleapis.com/maven2/'
+          allprojects {
+            buildscript { repositories { maven { url mirror } } }
+            repositories { maven { url mirror } }
+          }
+          EOG
+      - name: Build APK debug
+        run: |
+          cd android && chmod +x gradlew
+          for i in 1 2 3; do ./gradlew assembleDebug --no-daemon && exit 0; echo "Percobaan $i gagal, mengulang..."; sleep 20; done
+          exit 1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: NovaMusic-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Build dan tanda tangani APK release
+        if: env.KS != ''
+        run: |
+          cd android && ./gradlew assembleRelease
+          BT=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+          echo "$KS" | base64 -d > ks.jks
+          $BT/zipalign -p -f 4 app/build/outputs/apk/release/app-release-unsigned.apk aligned.apk
+          $BT/apksigner sign --ks ks.jks --ks-pass pass:"$KS_PASS" --key-pass pass:"$KEY_PASS" --ks-key-alias "$KS_ALIAS" --out app-release.apk aligned.apk
+      - uses: actions/upload-artifact@v4
+        if: env.KS != ''
+        with:
+          name: NovaMusic-release
+          path: android/app-release.apk
