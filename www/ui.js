@@ -44,6 +44,9 @@ const IC = {
   gear: pa('M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z'),
   info: pa('M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z M12 16v-4 M12 8h.01'),
   folder: pa('M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'),
+  palette: pa('M12 2a10 10 0 0 0 0 20c1.1 0 2-.9 2-2 0-.5-.2-1-.5-1.3-.3-.4-.5-.8-.5-1.3 0-1.1.9-2 2-2h2.4A4.6 4.6 0 0 0 22 11c0-5-4.5-9-10-9z M7.5 11h.01 M10 7h.01 M15 7h.01 M17.5 11h.01'),
+  expand: pa('M15 3h6v6 M9 21H3v-6 M21 3l-7 7 M3 21l7-7'),
+  lyric: pa('M4 7h16 M4 12h16 M4 17h10'),
   mono: pa('M2 12h3 M7 8v8 M11 5v14 M15 9v6 M19 7v10 M22 12h0')
 };
 document.body.insertAdjacentHTML('afterbegin', `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>${Object.entries(IC).map(([k, v]) => `<symbol id="i-${k}" viewBox="0 0 24 24">${v}</symbol>`).join('')}</defs></svg>`);
@@ -58,18 +61,41 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* ----- tema ----- */
 const THEMES = {
-  glass: { n: 'Default\n(Liquid Glass)', bg0: '#040a1c', bg1: '#0f2f78', acc: '#2f8cff', acc2: '#7fd0ff', pv: 'radial-gradient(circle at 30% 30%,#7fd0ff,#2f8cff 35%,#0a1a4a 80%)' },
-  ocean: { n: 'Default\nOcean Blue', bg0: '#021424', bg1: '#06507f', acc: '#19b5ff', acc2: '#5ff0ff', pv: 'radial-gradient(circle at 70% 25%,#5ff0ff,#0a74c8 40%,#021a3a 85%)' },
-  sunset: { n: 'Sunset Pink', bg0: '#1c0716', bg1: '#7a1a4a', acc: '#ff5d8f', acc2: '#ffb36b', pv: 'linear-gradient(160deg,#ffb36b,#ff5d8f 45%,#3a0f3a)' },
-  forest: { n: 'Forest Green', bg0: '#03140b', bg1: '#0e5233', acc: '#2fd27a', acc2: '#b6f25c', pv: 'radial-gradient(circle at 60% 25%,#b6f25c,#1a8a4f 45%,#04180d 90%)' },
-  dark: { n: 'Dark Mode', bg0: '#050505', bg1: '#1d1d22', acc: '#8f98a8', acc2: '#e4e8ef', pv: 'radial-gradient(circle at 35% 30%,#8b7a2a,#222 40%,#050505 80%)' },
-  gold: { n: 'Golden Lux', bg0: '#140d02', bg1: '#5a3f08', acc: '#f5b82e', acc2: '#ffe08a', pv: 'radial-gradient(circle at 65% 30%,#ffe08a,#e69a10 40%,#2a1a02 85%)' }
+  glass: { n: 'Glass Blue', kind: 'bubble', bg0: '#030a24', bg1: '#0b3bb0', acc: '#3a8dff', acc2: '#9fd4ff', pb: 'radial-gradient(circle at 35% 25%,#fff,#c9dcff 60%,#9ebcff)', pi: '#1a3fa8', pv: 'radial-gradient(circle at 35% 30%,#bfe3ff,#2f7bff 45%,#06185a 85%)' },
+  purple: { n: 'Purple', kind: 'butterfly', bg0: '#0b0222', bg1: '#4a1396', acc: '#a24dff', acc2: '#d9a6ff', pb: 'radial-gradient(circle at 35% 25%,#c58bff,#8a2be2 60%,#5a14b0)', pi: '#fff', pv: 'radial-gradient(circle at 35% 30%,#e0b8ff,#8a2be2 45%,#1a0640 85%)' },
+  pink: { n: 'Pink', kind: 'petal', bg0: '#3a1330', bg1: '#c25a8a', acc: '#ff7fb8', acc2: '#ffc2e0', pb: 'radial-gradient(circle at 35% 25%,#ffe0ef,#ff9cc6 65%,#ff7fb8)', pi: '#fff', pv: 'radial-gradient(circle at 35% 30%,#ffe3f0,#ff8fc0 45%,#8a2a5e 85%)' },
+  dark: { n: 'Dark', kind: 'smoke', bg0: '#040405', bg1: '#2a2b31', acc: '#9aa0ab', acc2: '#e6e8ee', pb: 'radial-gradient(circle at 35% 25%,#555861,#1b1c20 70%)', pi: '#fff', pr: '0 0 0 2px rgba(255,255,255,.28) inset,0 0 22px rgba(255,255,255,.14)', pv: 'radial-gradient(circle at 35% 30%,#8d9099,#222 40%,#000 85%)' },
+  sunset: { n: 'Sunset', kind: 'glow', bg0: '#33104a', bg1: '#e8743a', acc: '#ff9a4d', acc2: '#ffd59a', pb: 'radial-gradient(circle at 35% 25%,#fff,#ffe3c8 70%)', pi: '#ff6a3d', pv: 'radial-gradient(circle at 40% 70%,#ffd36a,#ff7a3d 40%,#6a2a8a 85%)' },
+  ocean: { n: 'Ocean', kind: 'bubble', bg0: '#021a1c', bg1: '#0b8077', acc: '#19d4b8', acc2: '#8ffff0', pb: 'radial-gradient(circle at 35% 25%,#b9fff4,#2fe0c4 65%,#12b8a0)', pi: '#04403a', pv: 'radial-gradient(circle at 35% 30%,#9bfff0,#12b8a0 45%,#033a3a 85%)' },
+  galaxy: { n: 'Galaxy', kind: 'star', bg0: '#070722', bg1: '#3a2aa8', acc: '#8a7bff', acc2: '#cbbcff', pb: 'radial-gradient(circle at 35% 25%,#e6deff,#a898ff 65%,#7a6cff)', pi: '#2a1a80', pv: 'radial-gradient(circle at 35% 30%,#d8ccff,#5a4cff 45%,#0a0a3a 85%)' },
+  neon: { n: 'Neon', kind: 'streak', bg0: '#05030f', bg1: '#3a0a52', acc: '#ff2f9a', acc2: '#35d6ff', pb: 'rgba(12,4,24,.7)', pi: '#ff4fb0', pr: '0 0 0 2.5px #ff2f9a inset,0 0 28px #ff2f9a,0 0 0 1px rgba(255,255,255,.25)', pv: 'radial-gradient(circle at 35% 30%,#ff9be0,#ff2f9a 40%,#2a0a5a 85%)' }
 };
+if (!THEMES[P.theme]) P.theme = 'glass';
 const TC = {};
+var uiKey = '';
+/* ilustrasi cadangan (abstrak) saat lagu tidak punya sampul */
+const SCN = {
+  glass: '<defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a7bff"/><stop offset="1" stop-color="#06155a"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><g fill="#fff" opacity=".85"><ellipse cx="60" cy="70" rx="62" ry="24"/><ellipse cx="110" cy="56" rx="48" ry="28"/><ellipse cx="240" cy="220" rx="70" ry="26"/></g><circle cx="150" cy="150" r="60" fill="none" stroke="#9fd4ff" stroke-width="10" opacity=".85"/><circle cx="150" cy="150" r="34" fill="#9fd4ff" opacity=".35"/>',
+  purple: '<defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7a2bff"/><stop offset="1" stop-color="#14052e"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><circle cx="190" cy="110" r="64" fill="#e0b8ff" opacity=".28"/><g fill="#fff"><circle cx="40" cy="50" r="2"/><circle cx="90" cy="30" r="1.6"/><circle cx="250" cy="40" r="2.4"/><circle cx="60" cy="190" r="1.8"/><circle cx="230" cy="230" r="2"/><circle cx="140" cy="250" r="1.6"/></g><path d="M0 300V230q70-50 150-10t150-20v100z" fill="#12042a"/>',
+  pink: '<defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffc0dc"/><stop offset="1" stop-color="#b8528a"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><g fill="#ff6fae" opacity=".9" stroke="#fff" stroke-width="2"><g transform="translate(90 100)"><ellipse rx="13" ry="26" transform="rotate(0)"/><ellipse rx="13" ry="26" transform="rotate(72)"/><ellipse rx="13" ry="26" transform="rotate(144)"/><ellipse rx="13" ry="26" transform="rotate(216)"/><ellipse rx="13" ry="26" transform="rotate(288)"/></g><g transform="translate(210 190) scale(.8)"><ellipse rx="13" ry="26"/><ellipse rx="13" ry="26" transform="rotate(72)"/><ellipse rx="13" ry="26" transform="rotate(144)"/><ellipse rx="13" ry="26" transform="rotate(216)"/><ellipse rx="13" ry="26" transform="rotate(288)"/></g></g><circle cx="90" cy="100" r="9" fill="#ffd34d"/><circle cx="210" cy="190" r="7" fill="#ffd34d"/>',
+  dark: '<defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8a8d96"/><stop offset="1" stop-color="#0a0a0c"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><g fill="#d9dbe1" opacity=".5"><ellipse cx="70" cy="80" rx="70" ry="28"/><ellipse cx="220" cy="60" rx="60" ry="24"/><ellipse cx="170" cy="130" rx="80" ry="24"/></g><circle cx="150" cy="190" r="40" fill="#050506" opacity=".8"/>',
+  sunset: '<defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a2a8a"/><stop offset=".55" stop-color="#ff7a3d"/><stop offset="1" stop-color="#ffd36a"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><circle cx="150" cy="190" r="56" fill="#fff2b0" opacity=".9"/><g fill="#fff" opacity=".35"><ellipse cx="70" cy="90" rx="70" ry="10"/><ellipse cx="230" cy="125" rx="60" ry="9"/></g><path d="M0 300V240q60-40 120-12t180-26v98z" fill="#2a1030"/>',
+  ocean: '<defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1fe0c8"/><stop offset="1" stop-color="#033a3a"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><g fill="none" stroke="#fff" opacity=".6"><circle cx="70" cy="200" r="16"/><circle cx="110" cy="130" r="9"/><circle cx="220" cy="90" r="20"/><circle cx="240" cy="220" r="11"/><circle cx="160" cy="250" r="7"/></g><path d="M0 220q40-30 80 0t80 0 80 0 60-10v90H0z" fill="#042e30" opacity=".7"/>',
+  galaxy: '<defs><linearGradient id="a" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5a3cff"/><stop offset="1" stop-color="#0a0a3a"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><g fill="#fff"><circle cx="50" cy="60" r="2"/><circle cx="120" cy="40" r="1.6"/><circle cx="260" cy="90" r="2.2"/><circle cx="40" cy="160" r="1.6"/><circle cx="210" cy="170" r="2"/><circle cx="100" cy="120" r="1.4"/></g><path d="M250 40L150 110" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".85"/><circle cx="250" cy="40" r="5" fill="#fff"/><path d="M0 300V250q80-40 160-5t140-15v70z" fill="#0b0a2e"/>',
+  neon: '<defs><linearGradient id="a" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a0a5a"/><stop offset="1" stop-color="#05030f"/></linearGradient></defs><rect width="300" height="300" fill="url(#a)"/><g opacity=".9"><rect x="30" y="120" width="50" height="180" fill="#120830" stroke="#35d6ff" stroke-width="2"/><rect x="95" y="80" width="60" height="220" fill="#120830" stroke="#ff2f9a" stroke-width="2"/><rect x="170" y="140" width="45" height="160" fill="#120830" stroke="#35d6ff" stroke-width="2"/><rect x="228" y="100" width="52" height="200" fill="#120830" stroke="#ff2f9a" stroke-width="2"/></g><path d="M0 40L300 220" stroke="#ff2f9a" stroke-width="3" opacity=".8"/>'
+};
+const scene = () => { const k = P.theme, svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300">${SCN[k] || SCN.glass}</svg>`, u = 'data:image/svg+xml,' + encodeURIComponent(svg); return { u, h: `<div class="art"><img src="${u}" alt=""></div>` } };
+function decoBuild() {
+  const d = $('#full .deco'); if (!d) return; const k = THEMES[P.theme].kind, n = { petal: 16, bubble: 14, butterfly: 8, star: 40, streak: 7, smoke: 5, glow: 16 }[k] || 10; let h = '';
+  for (let i = 0; i < n; i++) h += `<i style="--l:${Math.random() * 100}%;--tp:${Math.random() * 100}%;--d:${(-Math.random() * 14).toFixed(1)}s;--t:${(k === 'streak' ? 3 + Math.random() * 3 : k === 'star' ? 2 + Math.random() * 4 : 9 + Math.random() * 9).toFixed(1)}s;--s:${(k === 'star' ? 1.5 + Math.random() * 2.5 : 8 + Math.random() * 22).toFixed(0)}px"></i>`;
+  d.className = 'deco dk-' + k; d.innerHTML = h;
+}
 function applyTheme(k) {
   const t = THEMES[k] || THEMES.glass, s = document.documentElement.style;
   ['bg0', 'bg1', 'acc', 'acc2'].forEach(x => s.setProperty('--' + x, t[x])); TC.acc = t.acc; TC.acc2 = t.acc2;
+  s.setProperty('--pb', t.pb); s.setProperty('--pi', t.pi); s.setProperty('--pr', t.pr || '0 0 0 1px rgba(255,255,255,.4) inset,0 0 30px ' + t.acc);
   const m = $('meta[name=theme-color]'); if (m) m.content = t.bg0;
+  if (applyTheme.last !== k) { applyTheme.last = k; decoBuild(); if (typeof cur === 'function' && cur()) { uiKey = ''; ui() } }
 }
 applyTheme(P.theme);
 
@@ -77,12 +103,19 @@ applyTheme(P.theme);
 const R = { tab: 'home', stack: [] }, OVS = [];
 let skip = 0, after = null;
 let prevDepth = 0, prevTab = 'home', navSync = () => { };
+const colS = { scroll: false, force: false, y: 0 };
+const TABICON = { home: 'home', search: 'search', lib: 'music', set: 'user' };
+function updateCol() {
+  const app = $('#app'), was = app.classList.contains('col'), c = (colS.scroll && !colS.force) || R.stack.length > 0; app.classList.toggle('col', c);
+  const b = $('.ncol'); if (b) b.innerHTML = ic(R.stack.length ? 'home' : TABICON[R.tab]);
+  if (was && !c) setTimeout(() => navSync(true), 500);
+}
 function render() {
   applyTheme(P.theme);
   const top = R.stack[R.stack.length - 1], [n, a] = top || [R.tab], el = $('#view');
   const d = R.stack.length, dir = d > prevDepth ? 'fwd' : d < prevDepth ? 'bck' : R.tab !== prevTab ? 'tab' : ''; prevDepth = d; prevTab = R.tab;
   el.classList.remove('pg-fwd', 'pg-bck', 'pg-tab'); if (dir) { void el.offsetWidth; el.classList.add('pg-' + dir) }
-  revReset();
+  revReset(); colS.scroll = false; colS.force = false; colS.y = 0; updateCol();
   $('#app').classList.toggle('sub', !!top);
   $$('#nav button').forEach(b => b.classList.toggle('on', b.dataset.t === R.tab));
   el.scrollTop = 0; el.innerHTML = ''; V[n](el, a); navSync();
@@ -130,27 +163,28 @@ function ask(title, ph, cb, val = '', type = 'text') {
 /* ----- tampilan pemutar (diperbarui dari mesin) ----- */
 const QUAL = { Low: ['Rendah (96 kbps)', 'LQ'], Normal: ['Normal (160 kbps)', 'SQ'], High: ['Tinggi (320 kbps)', 'HQ'], 'Hi-Res': ['Hi-Res (lossless)', 'Hi-Res'] };
 const isFav = t => t && P.fav.some(x => x.id === t.id);
-let uiKey = '';
 function ui() {
   const t = cur(); document.body.classList.toggle('has', !!t);
   $$('.bplay').forEach(b => b.innerHTML = ic(A.paused ? 'play' : 'pause', 'f'));
+  const fu = $('#full'); fu.classList.toggle('playing', !A.paused); fu.classList.toggle('noviz', !P.viz);
   $$('.bshuf').forEach(b => b.classList.toggle('on', S.shuf));
   $$('.brep').forEach(b => { b.classList.toggle('on', S.rep > 0); b.classList.toggle('one', S.rep === 2) });
   $$('.btmr').forEach(b => b.classList.toggle('on', !!(S.dl || S.dlEnd)));
   if (!t) return;
   if (uiKey !== t.id) {
     uiKey = t.id;
-    $$('.nArt').forEach(e => e.innerHTML = art(t));
+    const sc = t.art ? null : scene(); $$('.nArt').forEach(e => e.innerHTML = sc && e.closest('.pa') ? sc.h : art(t));
     $$('.nT').forEach(e => e.textContent = t.title); $$('.nA').forEach(e => e.textContent = t.artist);
-    const pb = $('.pbg', $('#full')); if (pb) pb.style.backgroundImage = t.art ? `url("${t.art}")` : 'none';
-    $$('.seek').forEach(s => { s.disabled = !!t.live; s.value = 0; s.style.setProperty('--p', '0%') });
+    const pb = $('.pbg', $('#full')); if (pb) pb.style.backgroundImage = t.art ? `url("${t.art}")` : `url("${sc.u}")`;
+    $$('.seek').forEach(s => { s.disabled = !!t.live; s.value = 0; s.style.setProperty('--p', '0%') }); miniTint(t);
   }
+  const mf = $('#mfol'); if (mf) mf.classList.toggle('on', P.fol.includes(t.artist)); $$('.mpp').forEach(e => e.innerHTML = A.paused ? ic('play', 'f s') : '');
   $$('.bfav').forEach(b => { const f = isFav(t); b.classList.toggle('on', f); b.innerHTML = ic('heart', f ? 'f' : '') });
   $$('.bdl').forEach(b => b.innerHTML = ic(P.off.some(x => x.id === t.id) ? 'check' : 'dl'));
-  $$('.badge').forEach(b => b.textContent = QUAL[P.qual][1]);
 }
 function uiTime() {
   const t = cur(); if (!t) return; const D = A.duration, c = A.currentTime;
+  $('#mini').style.setProperty('--pp', (D && isFinite(D) ? c / D * 100 : 0) + '%');
   const mb = $('#mbar i'); if (mb) mb.style.width = D && isFinite(D) ? c / D * 100 + '%' : '0%';
   $$('.cur').forEach(e => e.textContent = t.live ? 'LIVE' : fmt(c)); $$('.dur').forEach(e => e.textContent = t.live ? '' : fmt(D));
   if (D && isFinite(D) && !t.live) $$('.seek').forEach(s => { if (!s.drag) { s.value = c / D * 1000; s.style.setProperty('--p', c / D * 100 + '%') } });
@@ -195,7 +229,7 @@ function tmenu(t) {
     ['share', 'Bagikan', () => shareT(t)]]);
 }
 function favT(t) { const k = P.fav.findIndex(x => x.id === t.id); k < 0 ? P.fav.unshift(t) : P.fav.splice(k, 1); save(); ui(); toast(k < 0 ? 'Ditambahkan ke Favorit' : 'Dihapus dari Favorit') }
-function follow(a) { const k = P.fol.indexOf(a); k < 0 ? P.fol.push(a) : P.fol.splice(k, 1); save(); toast(k < 0 ? `Mengikuti ${a}` : `Berhenti mengikuti ${a}`) }
+function follow(a) { const k = P.fol.indexOf(a); k < 0 ? P.fol.push(a) : P.fol.splice(k, 1); save(); ui(); toast(k < 0 ? `Mengikuti ${a}` : `Berhenti mengikuti ${a}`) }
 async function shareT(t) {
   const x = `🎵 Aku lagi dengerin "${t.title}" oleh ${t.artist} di NovaMusic`;
   try { if (navigator.share) await navigator.share({ text: x }); else { await navigator.clipboard.writeText(x); toast('Teks disalin, tinggal tempel') } } catch (e) { }
@@ -230,10 +264,18 @@ function btSheet() {
   const okm = 'mediaSession' in navigator;
   sheet('Bluetooth Control', `<p class="note" style="font-size:14px;color:#fff">${okm ? 'Aktif.' : 'Perangkat ini belum mendukung Media Session.'} Tombol <b>putar/jeda, berikutnya, sebelumnya</b> dan <b>geser posisi</b> pada earbud, headset, dan layar mobil Bluetooth mengendalikan NovaMusic, termasuk saat layar terkunci.</p><p class="note">Pasangkan perangkat lewat pengaturan Bluetooth HP, lalu putar lagu seperti biasa.</p>`);
 }
-function toggleViz() { P.viz = !P.viz; save(); toast(P.viz ? 'Audio Visualizer aktif di pemutar' : 'Audio Visualizer dimatikan'); if (P.viz && cur()) openOv('full') }
+function toggleViz() { P.viz = !P.viz; save(); ui(); toast(P.viz ? 'Audio Visualizer aktif di pemutar' : 'Audio Visualizer dimatikan'); if (P.viz && cur()) openOv('full') }
 const wakeL = { l: null };
 async function openCar() { openOv('car'); try { wakeL.l = await navigator.wakeLock.request('screen') } catch (e) { } }
 
+function themeBar() { return `<div class="tbar glass"><span class="tl">${ic('palette')}<b>Pilih Tema :</b></span><div class="tsw">${Object.entries(THEMES).map(([k, t]) => `<button data-k="${k}" class="${k === P.theme ? 'on' : ''}" aria-label="${t.n}"><i style="background:${t.pv}"></i><span>${t.n}</span></button>`).join('')}</div></div>` }
+function themeSheet() {
+  sheet('Tema Aplikasi', themeBar(), el => $$('.tsw button', el).forEach(b => b.onclick = () => { P.theme = b.dataset.k; save(); applyTheme(P.theme); $$('.tsw button', el).forEach(x => x.classList.toggle('on', x === b)) }));
+}
+function moreSheet() {
+  const t = cur(); if (!t) return;
+  menu(t.title, [['sliders', 'Equalizer', () => unwind(() => go('eq'))], ['dl', P.off.some(x => x.id === t.id) ? 'Hapus unduhan' : 'Unduh untuk offline', () => dl(t)], ['music', 'Tambah ke playlist', () => addToPl(t)], ['car', 'Car Mode', openCar], ['share', 'Bagikan', () => shareT(t)], ['bars', P.viz ? 'Matikan Audio Visualizer' : 'Nyalakan Audio Visualizer', toggleViz], ['palette', 'Ganti tema', themeSheet]]);
+}
 /* ----- data penemuan ----- */
 const A_ = SRC.audius; let TRN = null;
 const trend = async () => TRN || (TRN = await A_.get('Semua'));
@@ -350,7 +392,7 @@ const V = {
     show();
   },
   set(el) {
-    const T = THEMES[P.theme].n.replace('\n', ' ');
+    const T = THEMES[P.theme].n;
     el.innerHTML = `<header class="sub-top"><button class="ib" id="bk" aria-label="Beranda">${ic('left')}</button><h1>Pengaturan</h1><div class="hr"><button class="ib" id="hs" aria-label="Cari">${ic('search')}</button></div></header>
     <div class="prof glass" id="pf"><div class="av">${esc((P.name[0] || 'N').toUpperCase())}</div><div class="mi"><b style="font-size:18px">${esc(P.name)}</b><span>Premium Member ${ic('crown', 'f s crown')}</span></div>${ic('right', 's')}</div>
     <div class="box glass">
@@ -360,7 +402,7 @@ const V = {
     <div class="li"><div class="gi">${ic('bell')}</div><div class="mi"><b>Notifikasi</b><span>${P.notif ? 'Aktif' : 'Nonaktif'}</span></div>${sw('notif', P.notif)}</div>
     <div class="li"><div class="gi">${ic('mono')}</div><div class="mi"><b>Data Saver</b><span>${P.ds ? 'Hemat kuota aktif' : 'Nonaktif'}</span></div>${sw('ds', P.ds)}</div></div>
     <div class="box glass">${li('', 'AI Music Assistant', 'Cari lagu lewat obrolan atau suara', 'ai', 'star')}${li('', 'Sosial & Komunitas', 'Bagikan, ikuti artis, playlist bersama', 'so', 'users')}${li('', 'Fitur Unggulan Lainnya', 'Mood, Replay Stats, Car Mode, dll.', 'fi', 'layers')}${li('', 'Replay Stats', 'Statistik mendengarmu', 'st', 'bars')}${li('', 'Hidden Playlist', 'Playlist rahasia berkunci PIN', 'hp', 'lock')}</div>
-    <div class="box glass">${li('', 'Sumber Musik', SRC[P.src].n + ' · untuk pencarian', 'sr', 'music')}${li('', 'Lagu dari HP', 'Putar file MP3/FLAC milikmu', 'lf', 'folder')}${li('', 'Cadangan & Pulihkan', 'Favorit, playlist, artis diikuti', 'bk2', 'share')}${li('', 'Tentang NovaMusic', 'Versi 2.1', 'ab', 'info')}</div>`;
+    <div class="box glass">${li('', 'Sumber Musik', SRC[P.src].n + ' · untuk pencarian', 'sr', 'music')}${li('', 'Lagu dari HP', 'Putar file MP3/FLAC milikmu', 'lf', 'folder')}${li('', 'Cadangan & Pulihkan', 'Favorit, playlist, artis diikuti', 'bk2', 'share')}${li('', 'Tentang NovaMusic', 'Versi 2.3', 'ab', 'info')}</div>`;
     $('#bk').onclick = () => tab('home'); $('#hs').onclick = () => tab('search');
     $('#pf').onclick = () => ask('Nama profil', 'Namamu', v => { P.name = v.slice(0, 24); save(); render() }, P.name);
     const A2_ = {
@@ -403,8 +445,9 @@ const V = {
   },
   theme(el) {
     let sel = P.theme;
-    el.innerHTML = `${sub('Tema Aplikasi')}<div class="thg">${Object.entries(THEMES).map(([k, t]) => `<div class="th-c ${k === sel ? 'sel' : ''}" data-k="${k}" style="background:${t.pv}">${t.n.replace('\n', '<br>')}${k === sel ? `<span class="ck">${ic('check')}</span>` : ''}</div>`).join('')}</div><button class="btn blk" id="ap">Terapkan</button>`; bindBack(el);
-    $$('.th-c', el).forEach(c => c.onclick = () => { sel = c.dataset.k; $$('.th-c', el).forEach(x => { const on = x === c; x.classList.toggle('sel', on); const k = $('.ck', x); if (k) k.remove(); if (on) x.insertAdjacentHTML('beforeend', `<span class="ck">${ic('check')}</span>`) }); applyTheme(sel) });
+    el.innerHTML = `${sub('Tema Aplikasi')}${themeBar()}<p class="note" style="padding:10px 4px">Ketuk tema untuk melihat pratinjau, lalu tekan Terapkan.</p><div class="thg">${Object.entries(THEMES).map(([k, t]) => `<div class="th-c ${k === sel ? 'sel' : ''}" data-k="${k}" style="background:${t.pv}">${t.n}${k === sel ? `<span class="ck">${ic('check')}</span>` : ''}</div>`).join('')}</div><button class="btn blk" id="ap">Terapkan</button>`; bindBack(el);
+    $$('.tsw button', el).forEach(b => b.onclick = () => { const c = $(`.th-c[data-k="${b.dataset.k}"]`, el); c && c.click() });
+    $$('.th-c', el).forEach(c => c.onclick = () => { sel = c.dataset.k; $$('.tsw button', el).forEach(x => x.classList.toggle('on', x.dataset.k === sel)); $$('.th-c', el).forEach(x => { const on = x === c; x.classList.toggle('sel', on); const k = $('.ck', x); if (k) k.remove(); if (on) x.insertAdjacentHTML('beforeend', `<span class="ck">${ic('check')}</span>`) }); applyTheme(sel) });
     $('#ap').onclick = () => { P.theme = sel; save(); applyTheme(sel); toast('Tema diterapkan'); back() };
   },
   ai(el) {
@@ -532,15 +575,18 @@ async function aiAsk(text) {
 function build() {
   $('#nav').innerHTML = [['home', 'Home', 'home'], ['search', 'Search', 'search'], ['lib', 'Library', 'music'], ['set', 'Profile', 'user']].map(t => `<button data-t="${t[0]}">${ic(t[2])}<span>${t[1]}</span></button>`).join('');
   navInit();
-  $('#mini').innerHTML = `<div class="cov nArt"></div><div class="mi"><b class="nT"></b><span class="nA"></span></div><button class="mb bplay" aria-label="Putar">${ic('play', 'f')}</button><button class="mb bnext" aria-label="Berikutnya">${ic('next', 'f')}</button><div id="mbar"><i></i></div>`;
+  $('#mini').innerHTML = `<div class="mcov"><div class="rg"></div><div class="cov nArt"></div><span class="mpp"></span></div><div class="mi"><b class="nT"></b><span class="nA"></span></div><button class="mb n bplay" aria-label="Putar">${ic('play', 'f')}</button><button class="mb n bnext" aria-label="Berikutnya">${ic('next', 'f')}</button><button class="mb c" id="mfol" aria-label="Ikuti artis">${ic('user')}</button><button class="mb c" id="madd" aria-label="Tambah ke playlist">${ic('plus')}</button><button class="mb c bfav" aria-label="Favorit">${ic('heart')}</button><div id="mbar"><i></i></div>`;
+  $('#nav').insertAdjacentHTML('beforeend', `<button class="ncol" aria-label="Menu">${ic('home')}</button>`);
+  $('.mcov').onclick = e => { if ($('#app').classList.contains('col')) { e.stopPropagation(); toggle() } };
+  $('#mfol').onclick = () => cur() && follow(cur().artist); $('#madd').onclick = () => cur() && addToPl(cur());
+  $('.ncol').onclick = () => { if (R.stack.length) return tab('home'); colS.force = true; updateCol() };
   $('#mini').onclick = e => { if (!e.target.closest('button')) openOv('full') };
-  $('#full').innerHTML = `<div class="pbg"></div>
-    <div class="row2"><button class="ib" id="fc" aria-label="Tutup">${ic('down')}</button><b style="font-size:15px;opacity:.85">Sedang Diputar</b><button class="ib bshare" aria-label="Bagikan">${ic('share')}</button></div>
-    <div class="pa"><div class="nArt" style="position:absolute;inset:0"></div><span class="badge">HQ</span></div>
+  $('#full').innerHTML = `<div class="pbg"></div><div class="deco"></div>
+    <div class="phd"><button class="phb" id="fc" aria-label="Tutup">${ic('left')}</button><div class="phc"><b>Sedang Diputar</b><span class="nA"></span></div><button class="phb" id="fc2" aria-label="Perkecil">${ic('down')}</button></div>
+    <div class="pa"><div class="nArt" style="position:absolute;inset:0"></div><button class="amore" id="amore" aria-label="Menu lainnya">${ic('expand')}</button></div>
     <div class="pt"><div class="mi"><b class="nT"></b><span class="nA"></span></div><button class="ib bfav" aria-label="Favorit" style="border:0;background:none">${ic('heart')}</button></div>
     ${seekw()}${ctrls()}<canvas class="viz" data-p="1"></canvas>
-    <div class="tools"><button class="bq" aria-label="Antrean">${ic('list')}</button><button class="btmr" aria-label="Timer">${ic('clock')}</button><button class="beq" aria-label="Equalizer">${ic('sliders')}</button><button class="bdl" aria-label="Unduh">${ic('dl')}</button><button class="bap" aria-label="Tambah ke playlist">${ic('plus')}</button><button class="bcar" aria-label="Car Mode">${ic('car')}</button></div>
-    <button class="lyb glass" id="lyo">${ic('list')}<span>Lirik</span>${ic('up')}</button>`;
+    <div class="pbar glass"><button class="bq">${ic('list', 's')}<span>Antrean</span></button><button class="btmr">${ic('clock', 's')}<span>Waktu tidur</span></button><button id="lyo">${ic('lyric', 's')}<span>Lirik</span></button></div>`;
   $('#lyr').innerHTML = `<div class="pbg" style="background:radial-gradient(circle at 50% 0,var(--acc),transparent 70%)"></div>
     <div class="sub-top"><button class="ib" id="lyc" aria-label="Kembali">${ic('left')}</button><h1>Lirik</h1><div class="hr"></div></div>
     <div class="tr" style="cursor:default"><div class="cov nArt" style="width:56px;height:56px"></div><div class="mi"><b class="nT" style="font-size:17px"></b><span class="nA"></span></div></div>
@@ -548,7 +594,7 @@ function build() {
     <div class="lsync"><span>Sinkronisasi lirik</span>${sw('lsync', LYS.sync)}</div>`;
   $('#car').innerHTML = `<div class="row2"><button class="ib" id="cc" aria-label="Tutup">${ic('x')}</button><b>Car Mode</b><span style="width:40px"></span></div>
     <div class="carv"><div class="pa nArt" style="position:relative;width:min(46vw,200px);margin:0 auto;border-radius:26px"></div><div class="mi"><b class="nT"></b><span class="nA"></span></div>${seekw()}${ctrls()}</div>`;
-  $('#fc').onclick = back; $('#lyc').onclick = back; $('#cc').onclick = () => { try { wakeL.l && wakeL.l.release() } catch (e) { } back() };
+  $('#fc').onclick = back; $('#fc2').onclick = back; $('#amore').onclick = moreSheet; decoBuild(); $('#lyc').onclick = back; $('#cc').onclick = () => { try { wakeL.l && wakeL.l.release() } catch (e) { } back() };
   $('#lyo').onclick = () => { openOv('lyr'); loadLyrics() };
 }
 /* ----- gelembung navigasi yang bisa digeser ----- */
@@ -569,14 +615,29 @@ function navInit() {
       st.raf = requestAnimationFrame(f);
     }; st.raf = requestAnimationFrame(f);
   }
-  navSync = () => { if (st.drag || !nav.clientWidth) return; geom(); st.t = posOf(Math.max(0, TABS.indexOf(R.tab))); if (!st.moved0) { st.x = st.t; st.moved0 = 1; paint() } else loop() };
+  navSync = snap => { if (st.drag || nav.clientWidth < 150) return; geom(); st.t = posOf(Math.max(0, TABS.indexOf(R.tab))); if (snap || !st.moved0) { st.x = st.t; st.v = 0; st.moved0 = 1; paint() } else loop() };
   const setT = cx => { st.t = clamp(cx - st.rx - st.w / 2, 6, 6 + 3 * st.w) };
-  nav.onpointerdown = e => { geom(); try { nav.setPointerCapture(e.pointerId) } catch (_) { } st.drag = true; st.rx = nav.getBoundingClientRect().left; setT(e.clientX); loop() };
+  nav.onpointerdown = e => { if ($('#app').classList.contains('col')) return; geom(); try { nav.setPointerCapture(e.pointerId) } catch (_) { } st.drag = true; st.rx = nav.getBoundingClientRect().left; setT(e.clientX); loop() };
   nav.onpointermove = e => { if (st.drag) setT(e.clientX) };
   nav.onpointerup = () => { if (!st.drag) return; st.drag = false; const n = idxAt(st.t); st.t = posOf(n); loop(); if (TABS[n] !== R.tab || R.stack.length) tab(TABS[n]) };
   nav.onpointercancel = () => { st.drag = false; navSync() };
   bs.forEach((b, i) => b.onclick = e => { if (e.detail === 0) tab(TABS[i]) });
-  addEventListener('resize', () => { geom(); st.x = st.t = posOf(Math.max(0, TABS.indexOf(R.tab))); paint() });
+  addEventListener('resize', () => { if (nav.clientWidth < 150) return; geom(); st.x = st.t = posOf(Math.max(0, TABS.indexOf(R.tab))); paint() });
+}
+
+/* ----- bar bawah mengecil saat scroll ke bawah ----- */
+$('#view').addEventListener('scroll', () => {
+  const y = $('#view').scrollTop, dy = y - colS.y; colS.y = y;
+  if (y < 24) { if (colS.scroll || colS.force) { colS.scroll = false; colS.force = false; updateCol() } return }
+  if (dy > 6 && (!colS.scroll || colS.force)) { colS.scroll = true; colS.force = false; updateCol() }
+  else if (dy < -6 && colS.scroll) { colS.scroll = false; colS.force = false; updateCol() }
+}, { passive: true });
+const hue = (r, g, b) => { r /= 255; g /= 255; b /= 255; const x = Math.max(r, g, b), n = Math.min(r, g, b), d = x - n; if (!d) return 260; const h = x === r ? ((g - b) / d) % 6 : x === g ? (b - r) / d + 2 : (r - g) / d + 4; return Math.round((h * 60 + 360) % 360) };
+function miniTint(t) {
+  const m = $('#mini'); m.style.setProperty('--mh', hh(t.title + t.artist)); if (!t.art) return;
+  const im = new Image(); im.crossOrigin = 'anonymous';
+  im.onload = () => { try { const c = document.createElement('canvas'); c.width = c.height = 8; const x = c.getContext('2d'); x.drawImage(im, 0, 0, 8, 8); const d = x.getImageData(0, 0, 8, 8).data; let r = 0, g = 0, b = 0, n = 0; for (let i = 0; i < d.length; i += 4) { if (Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]) > 30) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++ } } if (n && cur() && cur().id === t.id) m.style.setProperty('--mh', hue(r / n, g / n, b / n)) } catch (e) { } };
+  im.src = t.art;
 }
 
 /* ----- animasi muncul saat scroll (naik & turun) ----- */
@@ -613,4 +674,4 @@ document.addEventListener('click', e => {
   else if (c.contains('beq')) unwind(() => go('eq')); else if (c.contains('bcar')) openCar();
 });
 document.addEventListener('input', e => { const s = e.target; if (s.classList && s.classList.contains('seek') && A.duration && isFinite(A.duration)) { s.drag = 1; A.currentTime = s.value / 1000 * A.duration; s.style.setProperty('--p', s.value / 10 + '%'); clearTimeout(s._d); s._d = setTimeout(() => s.drag = 0, 300) } });
-build(); ui(); render();
+build(); ui(); render(); updateCol();
