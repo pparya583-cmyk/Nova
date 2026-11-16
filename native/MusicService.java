@@ -1,74 +1,50 @@
-package com.musikglass.app;
+package com.novamusic.app;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ServiceInfo;
 import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 
+/** Foreground service agar musik tetap berjalan saat layar mati / aplikasi di latar belakang. */
 public class MusicService extends Service {
-    static MusicService inst;
-    private PowerManager.WakeLock wl;
+    static final String CH = "novamusic_playback";
+    private PowerManager.WakeLock wake;
 
-    static Notification build(Context x, String t, String a, boolean playing) {
-        NotificationManager nm = (NotificationManager) x.getSystemService(Context.NOTIFICATION_SERVICE);
-        Notification.Builder b;
+    @Override public void onCreate() {
+        super.onCreate();
         if (Build.VERSION.SDK_INT >= 26) {
-            nm.createNotificationChannel(new NotificationChannel("play", "Pemutar musik", NotificationManager.IMPORTANCE_LOW));
-            b = new Notification.Builder(x, "play");
-        } else {
-            b = new Notification.Builder(x);
+            NotificationChannel c = new NotificationChannel(CH, "Pemutar musik", NotificationManager.IMPORTANCE_LOW);
+            c.setShowBadge(false);
+            getSystemService(NotificationManager.class).createNotificationChannel(c);
         }
-        Intent open = x.getPackageManager().getLaunchIntentForPackage(x.getPackageName());
-        PendingIntent pi = PendingIntent.getActivity(x, 0, open, Build.VERSION.SDK_INT >= 23 ? PendingIntent.FLAG_IMMUTABLE : 0);
-        return b.setContentTitle(t)
-                .setContentText(playing ? a : "Dijeda - " + a)
-                .setSmallIcon(android.R.drawable.ic_media_play)
-                .setContentIntent(pi)
-                .setOngoing(true)
-                .build();
+        PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
+        wake = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "NovaMusic:play");
+        wake.setReferenceCounted(false);
     }
 
-    static void wake(boolean on) {
-        if (inst != null) inst.setWake(on);
-    }
-
-    void setWake(boolean on) {
-        if (wl == null) {
-            wl = ((PowerManager) getSystemService(POWER_SERVICE)).newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "musikglass:play");
-            wl.setReferenceCounted(false);
-        }
-        if (on && !wl.isHeld()) wl.acquire();
-        else if (!on && wl.isHeld()) wl.release();
-    }
-
-    @Override public void onCreate() { super.onCreate(); inst = this; }
-    @Override public IBinder onBind(Intent i) { return null; }
-
-    @Override
-    public int onStartCommand(Intent in, int flags, int id) {
-        String t = in != null && in.getStringExtra("t") != null ? in.getStringExtra("t") : "Musik Glass";
-        String a = in != null && in.getStringExtra("a") != null ? in.getStringExtra("a") : "";
-        boolean p = in == null || in.getBooleanExtra("p", true);
-        Notification n = build(this, t, a, p);
+    @Override public int onStartCommand(Intent i, int flags, int id) {
+        if (i != null && "STOP".equals(i.getAction())) { stopSelf(); return START_NOT_STICKY; }
+        String title = i != null && i.hasExtra("title") ? i.getStringExtra("title") : "NovaMusic";
+        String artist = i != null && i.hasExtra("artist") ? i.getStringExtra("artist") : "";
+        boolean playing = i == null || i.getBooleanExtra("playing", true);
+        Intent open = new Intent(this, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        PendingIntent pi = PendingIntent.getActivity(this, 0, open, PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
+        Notification.Builder b = Build.VERSION.SDK_INT >= 26 ? new Notification.Builder(this, CH) : new Notification.Builder(this);
+        Notification n = b.setContentTitle(title).setContentText(playing ? artist : "Dijeda · " + artist)
+                .setSmallIcon(android.R.drawable.ic_media_play).setContentIntent(pi)
+                .setOngoing(playing).setOnlyAlertOnce(true).build();
         if (Build.VERSION.SDK_INT >= 29) startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK);
         else startForeground(1, n);
-        setWake(p);
-        return START_NOT_STICKY;
+        if (playing) { if (!wake.isHeld()) wake.acquire(6 * 60 * 60 * 1000L); } else if (wake.isHeld()) wake.release();
+        return START_STICKY;
     }
 
-    @Override public void onTaskRemoved(Intent rootIntent) { stopSelf(); }
-
-    @Override
-    public void onDestroy() {
-        setWake(false);
-        inst = null;
-        super.onDestroy();
-    }
+    @Override public void onDestroy() { if (wake != null && wake.isHeld()) wake.release(); super.onDestroy(); }
+    @Override public IBinder onBind(Intent i) { return null; }
 }
