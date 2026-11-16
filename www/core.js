@@ -13,7 +13,7 @@ const DEF = {
   fav: [], hist: [], pl: {}, off: [], hid: {}, pin: '', fol: [], nlog: [],
   st: { sec: 0, n: {}, a: {}, t: {} },
   eqv: [0, 0, 0, 0, 0], eq: false, pre: 'Normal', bass: false, virt: false, surr: false,
-  theme: 'glass', qual: 'High', ds: false, offm: false, notif: true, xf: 0, viz: true,
+  theme: 'glass', qual: 'High', ds: false, offm: false, notif: true, xf: 0, viz: false,
   name: 'Arya Music', src: 'audius', jid: ''
 };
 let P; try { P = { ...DEF, ...JSON.parse(localStorage.getItem('nova') || '{}') } } catch (e) { P = { ...DEF } }
