@@ -1,13 +1,24 @@
-# NovaMusic 2.0
+# NovaMusic — Web + Android
 
-Pemutar musik bergaya liquid glass (Capacitor + HTML/CSS/JS murni, tanpa framework).
+## Jalankan di browser
+Buka `index.html` (atau `npx serve .`).
 
-## Struktur
-- `www/core.js`  : mesin (sumber musik, pemutar, equalizer/efek, lirik, unduhan)
-- `www/ui.js`    : semua layar dan fitur
-- `www/style.css`: gaya liquid glass dan 6 tema
-- `native/`      : layanan putar di latar belakang (Android), tidak diubah
-- `.github/workflows/build-apk.yml`: build APK lewat GitHub Actions (tidak diubah, hanya nama artifact)
+## Jadikan APK (Android)
+Syarat: Node 18+, JDK 17, Android SDK.
 
-## Coba di browser
-`cd www && python3 -m http.server 8000` lalu buka http://localhost:8000
+    npm install
+    npm run android:init     # buat folder android/ + pasang plugin Music (notifikasi & musik latar)
+    npm run android:apk      # hasil: android/app/build/outputs/apk/debug/app-debug.apk
+
+Setelah mengubah kode web: `npm run android:sync`, lalu build ulang.
+
+Tanpa Android SDK lokal: upload folder ini ke GitHub, buka tab **Actions → Build APK → Run workflow**,
+lalu unduh APK dari bagian Artifacts.
+
+## Yang dipakai fitur native
+- `Music` (folder `native/`): foreground service agar lagu tetap jalan saat layar mati + notifikasi pemutar.
+- `@capacitor/filesystem`: unduhan lagu untuk mode offline.
+
+## Belum tersedia
+- Widget layar utama Android (butuh komponen native tambahan).
+- Listening Party / status teman real-time (butuh server).

@@ -1,14 +1,8 @@
 {
-  "appId": "com.musikglass.app",
+  "appId": "com.novamusic.app",
   "appName": "NovaMusic",
   "webDir": "www",
-  "android": {
-    "backgroundColor": "#040a1c",
-    "allowMixedContent": true
-  },
-  "plugins": {
-    "CapacitorHttp": {
-      "enabled": true
-    }
-  }
+  "backgroundColor": "#000000",
+  "android": { "allowMixedContent": false },
+  "server": { "androidScheme": "https" }
 }
