@@ -1,8 +1,0 @@
-{
-  "appId": "com.novamusic.app",
-  "appName": "NovaMusic",
-  "webDir": "www",
-  "backgroundColor": "#000000",
-  "android": { "allowMixedContent": false },
-  "server": { "androidScheme": "https" }
-}
