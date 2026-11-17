@@ -62,3 +62,8 @@ Online results are provided by Internet Archive uploaders. Availability, streami
 - Added the NovaMusic glass-note launcher icon.
 - Added a 2.1-second Compose intro screen with a soft pulsing glass halo, logo scale/fade entrance, and animated sage equalizer bars.
 - The intro is deliberately lightweight and uses native Compose animations rather than a heavy video/GIF.
+
+
+### Android SDK build configuration
+
+The project compiles against Android API 36 (`compileSdk = 36`) to satisfy the AndroidX Activity 1.11.0 metadata requirements. `targetSdk` remains 35. The GitHub Actions workflow installs Android platform 36 and Build Tools 36.0.0.
