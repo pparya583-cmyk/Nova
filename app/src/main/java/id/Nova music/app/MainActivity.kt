@@ -14,6 +14,8 @@ import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -27,6 +29,8 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -49,6 +53,8 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,9 +79,15 @@ import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.net.HttpURLConnection
@@ -137,6 +149,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Target SDK 35+ forces edge-to-edge; keep status/navigation icons dark on the light UI.
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT),
+            navigationBarStyle = SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
+        )
 
         // Bind to the dedicated playback service. The service owns the player,
         // so playback survives Activity destruction and app backgrounding.
@@ -235,9 +252,20 @@ private fun NovaMusicApp(
     var permission by remember { mutableStateOf(hasAudioPermission()) }
     var showSplash by remember { mutableStateOf(true) }
 
+    // Android 13+ needs a runtime grant before the media notification/lock-screen controls can show.
+    val notificationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { }
+
     LaunchedEffect(Unit) {
         delay(2100)
         showSplash = false
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
     }
 
     val permissionName = if (Build.VERSION.SDK_INT >= 33)
@@ -441,12 +469,16 @@ private fun NovaMusicApp(
 
                 AnimatedContent(
                     targetState = tab,
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
                     transitionSpec = {
                         (fadeIn(tween(220)) + scaleIn(initialScale = 0.985f, animationSpec = tween(220))) togetherWith
                             fadeOut(tween(130))
                     },
                     label = "nova-tab-transition"
                 ) { activeTab ->
+                // AnimatedContent stacks children in a Box, so a Column is required to lay them out
+                // vertically; verticalScroll keeps long content reachable on small screens.
+                Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
                 when (activeTab) {
                     Tab.HOME -> {
                         SearchBox(query, { query = it }, ::searchOnline)
@@ -497,6 +529,7 @@ private fun NovaMusicApp(
                         TrackList(favorites, favorites, onPlay = { playTrack(it, favorites) },
                             onFavorite = ::toggleFavorite, onDownload = { if (it.downloadUrl != null) downloadTrack(context, it) })
                     }
+                }
                 }
                 }
             }
@@ -573,9 +606,11 @@ private fun NovaSplashScreen() {
                         .border(1.dp, Color.White.copy(alpha = 0.78f), RoundedCornerShape(48.dp))
                         .background(Color.White.copy(alpha = 0.18f), RoundedCornerShape(48.dp))
                 )
+                // Starting from false makes the entrance animation actually play on first composition.
+                val logoVisible = remember { MutableTransitionState(false).apply { targetState = true } }
                 androidx.compose.animation.AnimatedVisibility(
-                    visible = true,
-                    enter = fadeIn(tween(650)) + scaleIn(
+                    visibleState = logoVisible,
+                    enter =fadeIn(tween(650)) + scaleIn(
                         initialScale = 0.78f,
                         animationSpec = spring(stiffness = 170f, dampingRatio = 0.72f)
                     )
@@ -681,7 +716,7 @@ private fun SearchBox(value: String, onChange: (String) -> Unit, onSearch: () ->
         placeholder = { Text("Search tracks, artists, recordings", color = Muted) },
         leadingIcon = { Icon(Icons.Default.Search, null, tint = Muted) },
         trailingIcon = {
-            IconButton(onClick = onSearch) { Icon(Icons.Default.ArrowForward, "Search", tint = Green) }
+            IconButton(onClick = onSearch) { Icon(Icons.AutoMirrored.Filled.ArrowForward, "Search", tint = Green) }
         },
         singleLine = true, shape = RoundedCornerShape(19.dp),
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
@@ -812,60 +847,73 @@ private fun escapeLucene(value: String): String = buildString {
     }
 }
 
-private suspend fun searchInternetArchive(term: String): List<Track> {
+private suspend fun searchInternetArchive(term: String): List<Track> = coroutineScope {
     val safeTerm = escapeLucene(term.trim())
     val encoded = URLEncoder.encode("($safeTerm) AND mediatype:audio", "UTF-8")
     val api = "https://archive.org/advancedsearch.php?q=$encoded&fl[]=identifier,title,creator&rows=30&page=1&output=json"
     val response = httpGet(api)
-    val docs = JSONObject(response).optJSONObject("response")?.optJSONArray("docs") ?: return emptyList()
-    val results = mutableListOf<Track>()
-    for (i in 0 until docs.length()) {
-        val doc = docs.optJSONObject(i) ?: continue
-        val identifier = doc.optString("identifier")
-        if (identifier.isBlank()) continue
-        try {
-            val metadata = JSONObject(httpGet("https://archive.org/metadata/${identifier}"))
-            val files = metadata.optJSONArray("files") ?: continue
-            var chosen: JSONObject? = null
-            for (j in 0 until files.length()) {
-                val f = files.optJSONObject(j) ?: continue
-                val name = f.optString("name")
-                val format = f.optString("format").lowercase()
-                val isAudio = format.contains("mp3") || format.contains("ogg") ||
-                    format.contains("flac") || format.contains("wave") || name.endsWith(".mp3", true) ||
-                    name.endsWith(".ogg", true) || name.endsWith(".flac", true) || name.endsWith(".wav", true)
-                val restricted = f.optBoolean("private", false)
-                if (isAudio && !restricted && name.isNotBlank()) {
-                    chosen = f
-                    break
-                }
+    val docs = JSONObject(response).optJSONObject("response")?.optJSONArray("docs")
+        ?: return@coroutineScope emptyList<Track>()
+    val items = (0 until docs.length()).mapNotNull { docs.optJSONObject(it) }
+    // Metadata is fetched in parallel (max 6 at once) instead of 30 sequential requests.
+    val gate = Semaphore(6)
+    items.map { doc -> async<Track?> { gate.withPermit { resolveArchiveTrack(doc) } } }
+        .awaitAll()
+        .filterNotNull()
+}
+
+private suspend fun resolveArchiveTrack(doc: JSONObject): Track? {
+    val identifier = doc.optString("identifier")
+    if (identifier.isBlank()) return null
+    return try {
+        val metadata = JSONObject(httpGet("https://archive.org/metadata/${identifier}"))
+        val files = metadata.optJSONArray("files") ?: return null
+        // Prefer MP3/OGG (small, stream-friendly) over FLAC/WAV.
+        fun rank(f: JSONObject): Int {
+            val name = f.optString("name").lowercase()
+            val format = f.optString("format").lowercase()
+            return when {
+                name.endsWith(".mp3") || format.contains("mp3") -> 0
+                name.endsWith(".ogg") || format.contains("ogg") -> 1
+                name.endsWith(".flac") || format.contains("flac") -> 2
+                name.endsWith(".wav") || format.contains("wave") -> 3
+                else -> -1
             }
-            val file = chosen ?: continue
-            val fileName = file.optString("name")
-            val encodedName = fileName.split("/").joinToString("/") { URLEncoder.encode(it, "UTF-8").replace("+", "%20") }
-            val stream = "https://archive.org/download/${identifier}/${encodedName}"
-            val title = doc.optString("title", identifier)
-            val creator = when (val c = doc.opt("creator")) {
-                is String -> c
-                is org.json.JSONArray -> if (c.length() > 0) c.optString(0) else "Unknown artist"
-                else -> "Unknown artist"
-            }
-            val secs = file.optString("length").toDoubleOrNull()?.times(1000)?.toLong() ?: 0L
-            results += Track(
-                id = "ia:$identifier:$fileName",
-                title = title,
-                artist = creator,
-                album = identifier,
-                streamUrl = stream,
-                durationMs = secs,
-                downloadUrl = stream,
-                source = "Internet Archive"
-            )
-        } catch (_: Exception) {
-            // Skip individual archive items with unavailable metadata.
         }
+        var chosen: JSONObject? = null
+        var chosenRank = Int.MAX_VALUE
+        for (j in 0 until files.length()) {
+            val f = files.optJSONObject(j) ?: continue
+            val r = rank(f)
+            if (r < 0 || f.optBoolean("private", false) || f.optString("name").isBlank()) continue
+            if (r < chosenRank) { chosen = f; chosenRank = r }
+            if (r == 0) break
+        }
+        val file = chosen ?: return null
+        val fileName = file.optString("name")
+        val encodedName = fileName.split("/").joinToString("/") { URLEncoder.encode(it, "UTF-8").replace("+", "%20") }
+        val stream = "https://archive.org/download/${identifier}/${encodedName}"
+        val creator = when (val c = doc.opt("creator")) {
+            is String -> c
+            is org.json.JSONArray -> if (c.length() > 0) c.optString(0) else "Unknown artist"
+            else -> "Unknown artist"
+        }
+        val ms = file.optString("length").toDoubleOrNull()?.times(1000)?.toLong() ?: 0L
+        Track(
+            id = "ia:$identifier:$fileName",
+            title = doc.optString("title", identifier),
+            artist = creator,
+            album = identifier,
+            streamUrl = stream,
+            durationMs = ms,
+            downloadUrl = stream,
+            source = "Internet Archive"
+        )
+    } catch (e: CancellationException) {
+        throw e
+    } catch (_: Exception) {
+        null // Skip individual archive items with unavailable metadata.
     }
-    return results
 }
 
 private suspend fun fetchLyrics(title: String, artist: String): String? {
