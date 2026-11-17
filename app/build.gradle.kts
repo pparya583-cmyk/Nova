@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "id.novamusic.app"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "id.novamusic.app"
