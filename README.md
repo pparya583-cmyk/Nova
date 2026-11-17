@@ -67,3 +67,12 @@ Online results are provided by Internet Archive uploaders. Availability, streami
 ### Android SDK build configuration
 
 The project compiles against Android API 36 (`compileSdk = 36`) to satisfy the AndroidX Activity 1.11.0 metadata requirements. `targetSdk` remains 35. The GitHub Actions workflow installs Android platform 36 and Build Tools 36.0.0.
+
+## Bug-fix pass (1.1.1)
+- Fixed compile error: missing `rememberInfiniteTransition` import used by the splash screen.
+- Tab content is now laid out in a scrollable Column (AnimatedContent stacked children on top of each other; Home overflowed the screen).
+- Requests the POST_NOTIFICATIONS permission at runtime (Android 13+) so media notification/lock-screen controls appear.
+- Edge-to-edge system bars configured so status/navigation icons stay visible on targetSdk 35.
+- Splash logo entrance animation now plays (was initially visible).
+- Internet Archive search fetches metadata in parallel (max 6) and prefers MP3/OGG over FLAC/WAV.
+- Migrated deprecated `kotlinOptions` to `kotlin { compilerOptions }`; replaced deprecated `Icons.Default.ArrowForward`.
